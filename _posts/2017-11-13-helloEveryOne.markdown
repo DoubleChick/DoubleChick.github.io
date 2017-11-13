@@ -1,28 +1,23 @@
 ---
 layout:     post
 title:      "即将结束的2017怎么霍"
-subtitle:   " \"Hello World, Hello Blog\""
+subtitle:   " \"Hello World, Hello Myself\""
 date:       2017-11-13 13:30:00
 author:     "ZJF"
 header-img: "img/post-bg-2015.jpg"
-catalog: true
+catalog: false
 tags:
     - 生活
 ---
 
-> “Yeah It's on. ”
+> “Emmm.. en en en It's my check ”
 
 
 ## 前言
 
-Hux 的 Blog 就这么开通了。
+我终于下定决心并且把写博客这件事落实了，希望自己务必坚持下去。
 
-[跳过废话，直接看技术实现 ](#build) 
-
-
-
-2015 年，Hux 总算有个地方可以好好写点东西了。
-
+这是我的博客   ZJF Blog
 
 作为一个程序员， Blog 这种轮子要是挂在大众博客程序上就太没意思了。一是觉得大部分 Blog 服务都太丑，二是觉得不能随便定制不好玩。之前因为太懒没有折腾，结果就一直连个写 Blog 的地儿都没有。
 
