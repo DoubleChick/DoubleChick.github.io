@@ -87,16 +87,7 @@ service-worker: true
 # Friends
 friends: [
     {
-        title: "没有",
-        href: ""
-    },{
-        title: "朋友",
-        href: ""
-    },{
-        title: "你敢",
-        href: ""
-    },{
-        title: "信？",
+        title: "",
         href: ""
     }
 ]
