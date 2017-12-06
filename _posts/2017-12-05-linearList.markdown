@@ -4,7 +4,7 @@ title:      "线性表的顺序存储& Java实现"
 subtitle:   " Linear List "
 date:       2017-12-05 13:30:00
 author:     "ZJF"
-header-img: "img/post-bg-2015.jpg"
+header-img: "img/post-bg-unix-linux.jpg"
 catalog: false
 tags:
     - 数据结构
