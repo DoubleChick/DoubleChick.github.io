@@ -1,0 +1,50 @@
+---
+layout:     post
+title:      "我理解的HashMap"
+subtitle:   " Hash Map "
+date:       2017-12-10 13:30:00
+author:     "ZJF"
+header-img: "img/post-bg-unix-linux.jpg"
+catalog: false
+tags:
+    - 数据结构
+---
+
+## 概念
+像ArrayList、LinkedList这些线性表的不同存储实现都在命名上体现出了一部分实现原理,HashMap也有点类似
+* Map是一种存储`键值对`(Key-Value)的数据容器,它底层采用`数组`和`链表`两种数据解相结合的方式存储数据
+* Hash翻译为散列(散列函数),HashMap使用相应的散列函数作为数据存储的规则
+
+散列(Hash)是什么?
+* 通俗的讲就是`任意长度的输入`经过特定的算法转换为`固定长度的输出`(一般场景下输入长度大于输出长度)
+* 这个转换的过程称为散列
+* 这个算法称为散列函数
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
