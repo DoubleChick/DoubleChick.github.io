@@ -23,16 +23,119 @@ ZDAL是一个基于标准JDBC的`分布式`数据存储框架,适配多种数据
 架构设计图
 ![img](/img/in-post/zdal-architecture.jpg)
 
-我在项目中使用的是ZDAL4和SOFA4,SOFA提供了对ZDAL的继承和支持,可以使用sofa标签声明配置源
+## 数据拆分
+我在项目中使用的是ZDAL4和SOFA4,SOFA提供了对ZDAL的集成和支持,可以使用sofa标签声明配置源
 
 ```XML
 	<!-- 数据源 -->
-	<sofa:zdal-jdbc id="geniusDataSource">
-		<sofa:appDataSourceName value="bkpartnerApplicationDataSource" />
+	<sofa:zdal-jdbc id="DataSource">
+		<sofa:appDataSourceName value="bkxxxApplicationDataSource" />
 	</sofa:zdal-jdbc>
 ```
 
-## 数据拆分
+```XML
+	<bean id="bkxxx" class="com.alipay.zdal.client.config.bean.ZdalAppBean">
+		<property name="appName" value="bkxxx" />
+		<property name="dbmode" value="stable" />
+		<property name="idcName" value="gz00" />
+		<property name="appDataSourceList">
+			<list>
+				<ref bean="bkxxxApplicationDataSource" />
+			</list>
+		</property>
+	</bean>
+```
+
+```XML
+<bean id="bkxxxApplicationDataSource" class="com.alipay.zdal.client.config.bean.AppDataSourceBean">
+		<property name="appDataSourceName" value="bkxxxApplicationDataSource" />
+		<property name="dataBaseType" value="MYSQL" />
+		<property name="zoneError" value="EXCEPTION" />
+		<property name="appRule" ref="bkxxxApplicationDataSourceRule" />
+		<property name="physicalDataSourceSet">
+			<set>
+				<ref bean="bkxxxDataSourcePhysics" />
+			</set>
+		</property>
+		<property name="groupDataSourceRuleMap">
+			<map>
+				<entry key="group_0" value="bkxxx_ds:r10w10" />
+			</map>
+		</property>
+	</bean>
+```
+
+```XML
+<bean id="bkxxxDataSourcePhysics"
+		  class="com.alipay.zdal.client.config.bean.PhysicalDataSourceBean">
+		<property name="name" value="bkxxxDataSourcePhysics" />
+		<property name="type" value="MYSQL" />
+		<property name="jdbcUrl">
+			<value><![CDATA[jdbc:mysql://dev3.mysql.alibank.net:3306/bkxxx?useUnicode=true&amp;characterEncoding=utf8]]></value>
+		</property>
+		<property name="userName" value="bkxxx" />
+		<property name="password" value="6058184bc19f14aa0bf3cb262721f0df" />
+		<property name="minConn" value="10" />
+		<property name="maxConn" value="15" />
+		<property name="driverClass" value="com.mysql.jdbc.Driver" />
+		<property name="blockingTimeoutMillis" value="5000" />
+		<property name="idleTimeoutMinutes" value="30" />
+		<property name="preparedStatementCacheSize" value="100" />
+		<property name="queryTimeout" value="180" />
+		<property name="prefill" value="false" />
+		<property name="maxReadThreshold" value="100" />
+		<property name="maxWriteThreshold" value="100" />
+		<property name="logicDbNameSet">
+			<set>
+				<value><![CDATA[bkxxx_ds]]></value>
+			</set>
+		</property>
+	</bean>
+```
+
+```XML
+	<bean id="bkxxxApplicationDataSourceRule" class="com.alipay.zdal.rule.config.beans.AppRule"
+		  init-method="init">
+		<property name="masterRule" ref="bkxxxApplicationDataSourceElasticRule" />
+	</bean>
+```
+
+```XML
+<bean id="bkxxxApplicationDataSourceElasticRule" class="com.alipay.zdal.rule.config.beans.ShardRule">
+		<property name="dbtype" value="MYSQL" />
+		<property name="tableRules">
+			<map>
+				<entry key="bkxxx_table" value-ref="bkxxx_table_rule" />
+			</map>
+		</property>
+</bean>
+```
+
+```XML
+<bean id="bkxxx_table_rule" class="com.alipay.zdal.rule.config.beans.TableRule" init-method="init">
+		<property name="logicTableName" value="bkxxx_table" />
+		<property name="tbSuffix">
+			<value><![CDATA[groovyThroughAllDBTableList:def list = [];(0..19).each{ i ->list.add("0"+"${i}".padLeft(3,"0") );}; return list;]]></value>
+		</property>
+		<property name="dbIndexes">
+			<value><![CDATA[bkxxx_ds]]></value>
+		</property>
+		<property name="tbRuleArray">
+			<list>
+				<value><![CDATA[return com.mybank.bkxxx.common.dal.parseTableIndexMethod(业务字段).padLeft(4,"0");]]></value>
+			</list>
+		</property>
+		<property name="dbRuleList">
+			<list>
+				<value><![CDATA[ if(null != #id#) return 0;]]></value>
+			</list>
+		</property>
+	</bean>
+```
+
+
+
+
 
 
 
