@@ -1,7 +1,7 @@
 ---
 layout:     post
 title:      "ZDAL-分布式数据存储框架"
-subtitle:   " ZDAL "
+subtitle:   "分库分表|"
 date:       2017-12-16 13:30:00
 author:     "ZJF"
 header-img: "img/post-bg-unix-linux.jpg"
@@ -11,16 +11,35 @@ tags:
 ---
 
 ## 基础概念
-Java语言和数据库最基础的交互方式是使用JDBC(Java DataBase Connectivity)
+Java语言和数据库比较基础的交互方式是使用JDBC(Java DataBase Connectivity)
 * JDBC是一组由JAVA API组成的可以和多种数据库交互的接口,也可以简单理解为一些Jar包提供驱动服务
 * JDBC提供了一系列例如建立连接、预编译SQL等API来简化与数据库的交互过程
 * JAVA程序员基于JDBC开发,可以不必关心和数据库建立连接以及SQL处理的具体实现,可以专注在结合业务逻辑的SQL设计上
 
 
-ZDAL是一个基于标准的JDBC的`分布式`数据存储框架,适配多种数据库的同时提供了完善的`数据拆分能力`
-分布式的存储架构解决了单库的容量瓶颈以及单表的性能瓶颈
+ZDAL是一个基于标准JDBC的`分布式`数据存储框架,适配多种数据库的同时提供了完善的`数据拆分能力`
+分布式的存储架构解决了单库的容量瓶颈以及单表的性能瓶颈,从而让数据库可以提供海量的吞吐能力
 
+架构设计图
 ![img](/img/in-post/zdal-architecture.jpg)
+
+我在项目中使用的是ZDAL4和SOFA4,SOFA提供了对ZDAL的继承和支持,可以使用sofa标签声明配置源
+
+```XML
+	<!-- 数据源 -->
+	<sofa:zdal-jdbc id="geniusDataSource">
+		<sofa:appDataSourceName value="bkpartnerApplicationDataSource" />
+	</sofa:zdal-jdbc>
+```
+
+## 数据拆分
+
+
+
+
+
+
+
 
 
 
