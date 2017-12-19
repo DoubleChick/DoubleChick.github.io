@@ -20,7 +20,7 @@ Java语言和数据库最基础的交互方式是使用JDBC(Java DataBase Connec
 ZDAL是一个基于标准的JDBC的`分布式`数据存储框架,适配多种数据库的同时提供了完善的`数据拆分能力`
 分布式的存储架构解决了单库的容量瓶颈以及单表的性能瓶颈
 
-![img](/img/in-post/post-alitrip-pd/post-alitrip-pd.013.jpg)
+![img](/img/in-post/zdal-architecture.jpg)
 
 
 
