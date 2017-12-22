@@ -1,7 +1,7 @@
 ---
 layout:     post
 title:      "ZDAL-分布式数据存储框架"
-subtitle:   "分库分表"
+subtitle:   "数据拆分"
 date:       2017-12-16 13:30:00
 author:     "ZJF"
 header-img: "img/post-bg-unix-linux.jpg"
@@ -10,20 +10,24 @@ tags:
     - 蚂蚁中间件
 ---
 
-## 基础概念
-Java语言和数据库比较基础的交互方式是使用JDBC(Java DataBase Connectivity)
-* JDBC是一组由JAVA API组成的可以和多种数据库交互的接口,也可以简单理解为一些Jar包提供驱动服务
-* JDBC提供了一系列例如建立连接、预编译SQL等API来简化与数据库的交互过程
-* JAVA程序员基于JDBC开发,可以不必关心和数据库建立连接以及SQL处理的具体实现,可以专注在结合业务逻辑的SQL设计上
+## ZDAL概念
 
-ZDAL是一个基于标准JDBC的`分布式`数据存储框架,在适配多种数据库的基础上提供了
-* 完善的数据拆分能力
-* 分布式Sequence
-* 数据源弹性伸缩、流量分发等集群策略
+JDBC(Java DataBase Connectivity)是一组由Java编写的类和接口集
+* 封装了与多种数据库的连接实现,提供标准化的接口
+* 通过JDBC访问数据库可以专注于SQL逻辑而不需要为每一个数据库创建一套连接程序
 
-本文主要针对数据拆分能力做介绍
+ZDAL是一个基于JDBC的`分布式`数据存储框架,结合一个问题概要的介绍一下ZDAL的功能
 
-ZDAL架构图
+`ZDAL和ORM框架(iBatis、Hibernate等)的区别?`
+* ZDAL在JDBC的数据库连接基础之上`采用分布式架构`提供数据拆分、数据源弹性伸缩、流量分发等功能
+来解决传统单库单表存储的`容量性能瓶颈`以及在海量吞吐场景下提供`更安全稳定的数据层服务`
+* ORM框架主要使用元数据(XML中的声明)建立数据库记录与Java对象之间的映射关系,将对数据库记录的操作转化为对内存对象的操作
+* 个人感觉ZDAL主要解决性能安全问题,ORM框架主要为生成SQL以及数据库记录以及内存对象转换提供便利,两者互不依赖可单独使用
+
+本人在项目中使用的是 Sofa4 + ZDAL4 + iBatis 架构
+本文主要在数据拆分、分布式Sequence、与ORM集成三个方面介绍ZDAL
+
+ZDAL架构图一览
 ![img](/img/in-post/zdal-architecture.jpg)
 
 ## 数据拆分
@@ -41,10 +45,9 @@ Tip:ZDAL和ORM框架(iBatis)的区别
 我在项目中使用的是Sofa4集成ZDAL和iBatis,接下来结合相关配置进行介绍
 
 Sofa框架提供了对ZDAL的集成和支持,可以使用sofa标签声明配置源
-
 ```XML
 	<!-- 数据源 -->
-	<sofa:zdal-jdbc id="DataSource">
+	<sofa:zdal-jdbc id="bkxxxDataSource">
 		<sofa:appDataSourceName value="bkxxxApplicationDataSource" />
 	</sofa:zdal-jdbc>
 ```
@@ -148,48 +151,3 @@ Sofa框架提供了对ZDAL的集成和支持,可以使用sofa标签声明配置�
 		</property>
 	</bean>
 ```
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
