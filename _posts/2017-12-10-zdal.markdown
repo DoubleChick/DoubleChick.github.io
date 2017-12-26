@@ -1,7 +1,7 @@
 ---
 layout:     post
 title:      "ZDAL-分布式数据存储框架"
-subtitle:   "数据拆分"
+subtitle:   "数据拆分|分布式Sequence|ORM集成"
 date:       2017-12-16 13:30:00
 author:     "ZJF"
 header-img: "img/post-bg-unix-linux.jpg"
@@ -25,34 +25,38 @@ ZDAL是一个基于JDBC的`分布式`数据存储框架,结合一个问题概要
 * 个人感觉ZDAL主要解决性能安全问题,ORM框架主要为生成SQL以及数据库记录以及内存对象转换提供便利,两者互不依赖可单独使用
 
 本人在项目中使用的是 Sofa4 + ZDAL4 + iBatis 架构
-本文主要在数据拆分、分布式Sequence、与ORM集成三个方面介绍ZDAL
+本文主要介绍一下ZDAL的数据拆分功能及涉及到的相关概念
 
 ZDAL架构图一览
 ![img](/img/in-post/zdal-architecture.jpg)
 
-## 数据拆分
+## 数据源配置&分库分表规则
 在单库不分表的场景下,数据量的增大很容易产生数据库的性能问题
 * 例如单表存储1000w记录,查询会非常耗时
 * 数据太大也会对单台机器的容量产生压力,从而影响性能
 
-ZDAL的分布式的存储架构解决了单库的容量瓶颈以及单表的性能瓶颈
+通过数据拆分(本文均指水平拆分)可以解决上述问题,首先介绍ZDAL中数据源的配置
 
-Tip:ZDAL和ORM框架(iBatis)的区别
-* 
-* 
-
-
-我在项目中使用的是Sofa4集成ZDAL和iBatis,接下来结合相关配置进行介绍
-
-Sofa框架提供了对ZDAL的集成和支持,可以使用sofa标签声明配置源
+首先在common-dal bundle中通过Sofa标签声明JDBC的DataSouce实现类bkxxxDataSource
+* 可以看出DataSouce实现类依赖应用数据源
+* 使用方法:在业务代码中获取bkxxxDataSource或者将其注入到ORM框架中来对数据库进行操作
 ```XML
-	<!-- 数据源 -->
 	<sofa:zdal-jdbc id="bkxxxDataSource">
+		<!-- 应用数据源 -->
 		<sofa:appDataSourceName value="bkxxxApplicationDataSource" />
 	</sofa:zdal-jdbc>
 ```
 
-```XML
+应用数据源等配置写在{appname}-{environmentId}-{zone}-{version}-ds.xml文件下
+必须严格按照格式及真实数据填写,ZDAL在不同环境运行时会根据各项属性值获取特定配置文件进行初始化
+* appname 应用名 例如:bkxxx
+* environmentId 当前所属环境(dev、stable等)
+* zone LDC的zone标识、不同的zone对请求的路由规则不同、默认gz00
+* version 版本号,可以没有
+
+数据源配置文件内容如下:
+首先声明应用名、环境标识、Zone标识等信息、以及系统的应用数据源列表(可以为多个)
+```XML	
 	<bean id="bkxxx" class="com.alipay.zdal.client.config.bean.ZdalAppBean">
 		<property name="appName" value="bkxxx" />
 		<property name="dbmode" value="stable" />
@@ -65,17 +69,25 @@ Sofa框架提供了对ZDAL的集成和支持,可以使用sofa标签声明配置�
 	</bean>
 ```
 
+`应用数据源`中除了一些基础属性配置依赖了`物理数据源`以及`弹性数据源`
+本应用中只做了分表策略,没有进行分库所以物理数据源只有一项,
+分库场景下可以根据情况声明多个,路由规则后面会介绍
 ```XML
 <bean id="bkxxxApplicationDataSource" class="com.alipay.zdal.client.config.bean.AppDataSourceBean">
 		<property name="appDataSourceName" value="bkxxxApplicationDataSource" />
+		<!-- 数据库类型 -->
 		<property name="dataBaseType" value="MYSQL" />
+		<!-- 发生跨zone sql时抛出异常 -->
 		<property name="zoneError" value="EXCEPTION" />
+		<!-- 分库分表规则 -->
 		<property name="appRule" ref="bkxxxApplicationDataSourceRule" />
+		<!-- 物理数据源列表 -->
 		<property name="physicalDataSourceSet">
 			<set>
 				<ref bean="bkxxxDataSourcePhysics" />
 			</set>
 		</property>
+		<!-- 弹性数据源配置 -->
 		<property name="groupDataSourceRuleMap">
 			<map>
 				<entry key="group_0" value="bkxxx_ds:r10w10" />
@@ -84,41 +96,26 @@ Sofa框架提供了对ZDAL的集成和支持,可以使用sofa标签声明配置�
 	</bean>
 ```
 
+`物理数据源`
 ```XML
-<bean id="bkxxxDataSourcePhysics"
-		  class="com.alipay.zdal.client.config.bean.PhysicalDataSourceBean">
-		<property name="name" value="bkxxxDataSourcePhysics" />
-		<property name="type" value="MYSQL" />
-		<property name="jdbcUrl">
-			<value><![CDATA[jdbc:mysql://dev3.mysql.alibank.net:3306/bkxxx?useUnicode=true&amp;characterEncoding=utf8]]></value>
-		</property>
-		<property name="userName" value="bkxxx" />
-		<property name="password" value="6058184bc19f14aa0bf3cb262721f0df" />
-		<property name="minConn" value="10" />
-		<property name="maxConn" value="15" />
-		<property name="driverClass" value="com.mysql.jdbc.Driver" />
-		<property name="blockingTimeoutMillis" value="5000" />
-		<property name="idleTimeoutMinutes" value="30" />
-		<property name="preparedStatementCacheSize" value="100" />
-		<property name="queryTimeout" value="180" />
-		<property name="prefill" value="false" />
-		<property name="maxReadThreshold" value="100" />
-		<property name="maxWriteThreshold" value="100" />
+<bean id="bkxxxDataSourcePhysics" class="com.alipay.zdal.client.config.bean.PhysicalDataSourceBean">
+		<!-- 用户名、密码、连接数、超时时间等配置,此处略 -->
 		<property name="logicDbNameSet">
 			<set>
 				<value><![CDATA[bkxxx_ds]]></value>
 			</set>
 		</property>
-	</bean>
+</bean>
 ```
 
+应用数据源的规则
 ```XML
-	<bean id="bkxxxApplicationDataSourceRule" class="com.alipay.zdal.rule.config.beans.AppRule"
-		  init-method="init">
+	<bean id="bkxxxApplicationDataSourceRule" class="com.alipay.zdal.rule.config.beans.AppRule" init-method="init">
 		<property name="masterRule" ref="bkxxxApplicationDataSourceElasticRule" />
 	</bean>
 ```
 
+数据源规则列表,以table为当单位,真实场景需要将所有table加入tableRules中key为表名
 ```XML
 <bean id="bkxxxApplicationDataSourceElasticRule" class="com.alipay.zdal.rule.config.beans.ShardRule">
 		<property name="dbtype" value="MYSQL" />
@@ -130,6 +127,11 @@ Sofa框架提供了对ZDAL的集成和支持,可以使用sofa标签声明配置�
 </bean>
 ```
 
+本文以一个简单的例子介绍一下分库分表规则,
+bkxxx_transfer_detail表存储支付宝转账记录,表中aliPay_id存储支付宝id
+以aliPay_id作为分表位,分表规则:根据aliPay_id后两位进行sql路由
+
+配置如下
 ```XML
 <bean id="bkxxx_table_rule" class="com.alipay.zdal.rule.config.beans.TableRule" init-method="init">
 		<property name="logicTableName" value="bkxxx_table" />
@@ -151,3 +153,5 @@ Sofa框架提供了对ZDAL的集成和支持,可以使用sofa标签声明配置�
 		</property>
 	</bean>
 ```
+
+ZDAL的分布式Sequence的其他特性后续有心得再补充 ╮(￣▽￣"")╭
