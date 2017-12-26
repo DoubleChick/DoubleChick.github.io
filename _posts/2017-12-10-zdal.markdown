@@ -1,7 +1,7 @@
 ---
 layout:     post
 title:      "ZDAL-分布式数据存储框架"
-subtitle:   "数据拆分|分布式Sequence|ORM集成"
+subtitle:   "数据拆分|"
 date:       2017-12-16 13:30:00
 author:     "ZJF"
 header-img: "img/post-bg-unix-linux.jpg"
@@ -40,7 +40,7 @@ ZDAL架构图一览
 首先在common-dal bundle中通过Sofa标签声明JDBC的DataSouce实现类bkxxxDataSource
 * 可以看出DataSouce实现类依赖应用数据源
 * 使用方法:在业务代码中获取bkxxxDataSource或者将其注入到ORM框架中来对数据库进行操作
-```XML
+```xml
 	<sofa:zdal-jdbc id="bkxxxDataSource">
 		<!-- 应用数据源 -->
 		<sofa:appDataSourceName value="bkxxxApplicationDataSource" />
@@ -131,7 +131,30 @@ ZDAL架构图一览
 bkxxx_transfer_detail表存储支付宝转账记录,表中aliPay_id存储支付宝id
 以aliPay_id作为分表位,分表规则:根据aliPay_id后两位进行sql路由
 
-配置如下
+ZDAL支持以下四种分库分表结构
+![img](/img/in-post/DepotsTableStructure.png)
+
+```java
+package com.mybank.bkxxx.common.dal.common;
+
+public class ZDALRule {
+    /**
+     * 根据aliPay_id解析分表索引
+     *
+     * @param groupCode  支付宝id
+     * @return 表索引
+     */
+    public static String parseTableIndexByAliPayId(String aliPayId) {
+        return aliPayId.substring(aliPayId.length()-2, aliPayId.length());
+    }
+}
+```
+
+* tbSuffix : 表后缀
+* dbindexes : 库列表
+* tbRuleArray : 分表规则
+* dbRuleList : 分库规则
+
 ```xml
 <bean id="bkxxx_table_rule" class="com.alipay.zdal.rule.config.beans.TableRule" init-method="init">
 		<property name="logicTableName" value="bkxxx_table" />
@@ -143,7 +166,7 @@ bkxxx_transfer_detail表存储支付宝转账记录,表中aliPay_id存储支付�
 		</property>
 		<property name="tbRuleArray">
 			<list>
-				<value><![CDATA[return 方法全路径.parseTableIndexMethod(#aliPay_id#).padLeft(4,"0");]]></value>
+				<value><![CDATA[return com.mybank.bkxxx.common.dal.common.ZDALRule.parseTableIndexByAliPayId(#aliPay_id#).padLeft(4,"0");]]></value>
 			</list>
 		</property>
 		<property name="dbRuleList">
