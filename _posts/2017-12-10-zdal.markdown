@@ -56,7 +56,7 @@ ZDAL架构图一览
 
 数据源配置文件内容如下:
 首先声明应用名、环境标识、Zone标识等信息、以及系统的应用数据源列表(可以为多个)
-```XML	
+```xml	
 	<bean id="bkxxx" class="com.alipay.zdal.client.config.bean.ZdalAppBean">
 		<property name="appName" value="bkxxx" />
 		<property name="dbmode" value="stable" />
@@ -72,7 +72,7 @@ ZDAL架构图一览
 `应用数据源`中除了一些基础属性配置依赖了`物理数据源`以及`弹性数据源`
 本应用中只做了分表策略,没有进行分库所以物理数据源只有一项,
 分库场景下可以根据情况声明多个,路由规则后面会介绍
-```XML
+```xml
 <bean id="bkxxxApplicationDataSource" class="com.alipay.zdal.client.config.bean.AppDataSourceBean">
 		<property name="appDataSourceName" value="bkxxxApplicationDataSource" />
 		<!-- 数据库类型 -->
@@ -97,7 +97,7 @@ ZDAL架构图一览
 ```
 
 `物理数据源`
-```XML
+```xml
 <bean id="bkxxxDataSourcePhysics" class="com.alipay.zdal.client.config.bean.PhysicalDataSourceBean">
 		<!-- 用户名、密码、连接数、超时时间等配置,此处略 -->
 		<property name="logicDbNameSet">
@@ -109,14 +109,14 @@ ZDAL架构图一览
 ```
 
 应用数据源的规则
-```XML
+```xml
 	<bean id="bkxxxApplicationDataSourceRule" class="com.alipay.zdal.rule.config.beans.AppRule" init-method="init">
 		<property name="masterRule" ref="bkxxxApplicationDataSourceElasticRule" />
 	</bean>
 ```
 
 数据源规则列表,以table为当单位,真实场景需要将所有table加入tableRules中key为表名
-```XML
+```xml
 <bean id="bkxxxApplicationDataSourceElasticRule" class="com.alipay.zdal.rule.config.beans.ShardRule">
 		<property name="dbtype" value="MYSQL" />
 		<property name="tableRules">
@@ -132,18 +132,18 @@ bkxxx_transfer_detail表存储支付宝转账记录,表中aliPay_id存储支付�
 以aliPay_id作为分表位,分表规则:根据aliPay_id后两位进行sql路由
 
 配置如下
-```XML
+```xml
 <bean id="bkxxx_table_rule" class="com.alipay.zdal.rule.config.beans.TableRule" init-method="init">
 		<property name="logicTableName" value="bkxxx_table" />
 		<property name="tbSuffix">
-			<value><![CDATA[groovyThroughAllDBTableList:def list = [];(0..19).each{ i ->list.add("0"+"${i}".padLeft(3,"0") );}; return list;]]></value>
+			<value><![CDATA[groovyThroughAllDBTableList:def list = [];(0..99).each{ i ->list.add("0"+"${i}".padLeft(3,"0") );}; return list;]]></value>
 		</property>
 		<property name="dbIndexes">
 			<value><![CDATA[bkxxx_ds]]></value>
 		</property>
 		<property name="tbRuleArray">
 			<list>
-				<value><![CDATA[return com.mybank.bkxxx.common.dal.parseTableIndexMethod(业务字段).padLeft(4,"0");]]></value>
+				<value><![CDATA[return 方法全路径.parseTableIndexMethod(#aliPay_id#).padLeft(4,"0");]]></value>
 			</list>
 		</property>
 		<property name="dbRuleList">
