@@ -1,7 +1,7 @@
 ---
 layout:     post
 title:      "ZDAL-分布式数据存储框架"
-subtitle:   "数据拆分|"
+subtitle:   "数据拆分"
 date:       2017-12-16 13:30:00
 author:     "ZJF"
 header-img: "img/post-bg-unix-linux.jpg"
@@ -138,12 +138,6 @@ ZDAL支持以下四种分库分表结构
 package com.mybank.bkxxx.common.dal.common;
 
 public class ZDALRule {
-    /**
-     * 根据aliPay_id解析分表索引
-     *
-     * @param groupCode  支付宝id
-     * @return 表索引
-     */
     public static String parseTableIndexByAliPayId(String aliPayId) {
         return aliPayId.substring(aliPayId.length()-2, aliPayId.length());
     }
