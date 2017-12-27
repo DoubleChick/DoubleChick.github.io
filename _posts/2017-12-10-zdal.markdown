@@ -18,14 +18,11 @@ JDBC(Java DataBase Connectivity)是一组由Java编写的类和接口集
 
 ZDAL是一个基于JDBC的`分布式`数据存储框架,结合一个问题概要的介绍一下ZDAL的功能
 
-> ZDAL和ORM框架(iBatis、Hibernate等)的区别?
-
-> ZDAL在JDBC的数据库连接基础之上`采用分布式架构`提供数据拆分、数据源弹性伸缩、流量分发等功能
+* ZDAL和ORM框架(iBatis、Hibernate等)的区别?
+* ZDAL在JDBC的数据库连接基础之上`采用分布式架构`提供数据拆分、数据源弹性伸缩、流量分发等功能
 来解决传统单库单表存储的`容量性能瓶颈`以及在海量吞吐场景下提供`更安全稳定的数据层服务`
-
-> ORM框架主要使用元数据(XML中的声明)建立数据库记录与Java对象之间的映射关系,将对数据库记录的操作转化为对内存对象的操作
-
-> 个人感觉ZDAL主要解决性能安全问题,ORM框架主要为生成SQL以及数据库记录以及内存对象转换提供便利,两者互不依赖可单独使用
+* ORM框架主要使用元数据(XML中的声明)建立数据库记录与Java对象之间的映射关系,将对数据库记录的操作转化为对内存对象的操作
+* 个人感觉ZDAL主要解决性能安全问题,ORM框架主要为生成SQL以及数据库记录以及内存对象转换提供便利,两者互不依赖可单独使用
 
 本人在项目中使用的是 Sofa4 + ZDAL4 + iBatis 架构
 本文主要介绍一下ZDAL的数据拆分功能及涉及到的相关概念
@@ -72,25 +69,25 @@ ZDAL架构图一览
 	</bean>
 ```
 
-`应用数据源`中依赖`物理数据源`以及`弹性数据源`
-本应用中只做了分表策略,没有进行分库所以物理数据源只有一项,
-分库场景下可以根据情况声明多个,路由规则后面会介绍
+`应用数据源`依赖物理数据源(physicalDataSourceSet)、Group数据源(groupDataSourceRuleMap)以及数据源规则(appRule)
+
+物理数据源主要配置与数据库连接的相关属性(用户名,密码,连接数,超时时间等)与JDBC配置类似,详细配置省略
+
+Group数据源由多个同构数据源组成,在弹性路由的基础上提供了权重路由功能,以value值bkxxx_ds:r10w10为例,该配置说明子数据源bkxxx_ds读写权重相同
+
+本例为单数据源,多数据源场景下可以通过配置多个子数据源的的权重权重值实现读写分离、FailOver、权重分流等能力
 ```xml
+<!-- 应用数据源 -->
 <bean id="bkxxxApplicationDataSource" class="com.alipay.zdal.client.config.bean.AppDataSourceBean">
 		<property name="appDataSourceName" value="bkxxxApplicationDataSource" />
-		<!-- 数据库类型 -->
 		<property name="dataBaseType" value="MYSQL" />
-		<!-- 发生跨zone sql时抛出异常 -->
 		<property name="zoneError" value="EXCEPTION" />
-		<!-- 分库分表规则 -->
 		<property name="appRule" ref="bkxxxApplicationDataSourceRule" />
-		<!-- 物理数据源列表 -->
 		<property name="physicalDataSourceSet">
 			<set>
 				<ref bean="bkxxxDataSourcePhysics" />
 			</set>
 		</property>
-		<!-- 弹性数据源配置 -->
 		<property name="groupDataSourceRuleMap">
 			<map>
 				<entry key="group_0" value="bkxxx_ds:r10w10" />
@@ -98,11 +95,10 @@ ZDAL架构图一览
 		</property>
 	</bean>
 ```
-
-`物理数据源`
 ```xml
+<!-- 物理数据源 -->
 <bean id="bkxxxDataSourcePhysics" class="com.alipay.zdal.client.config.bean.PhysicalDataSourceBean">
-		<!-- 用户名、密码、连接数、超时时间等配置,此处略 -->
+		<!-- 连接相关属性省略 -->
 		<property name="logicDbNameSet">
 			<set>
 				<value><![CDATA[bkxxx_ds]]></value>
@@ -110,15 +106,20 @@ ZDAL架构图一览
 		</property>
 </bean>
 ```
+ZDAL支持以下四种分库分表结构
+![img](/img/in-post/DepotsTableStructure.png)
+本文中使用throughAIIDB结构分表
 
-应用数据源的规则
+`数据源规则`需要在tableRules属性中为每一张逻辑表配置分库分表规则
+* 结合一个简单的例子看一下分库分表的具体配置
+* 假设bkxxx_transfer_detail表中存储支付宝转账明细记录,字段aliPay_id存储支付宝id
+* 现设计以aliPay_id为分表索引
+* 分表规则为根据aliPay_id最后两位(00-99)将原表拆分成100张表
 ```xml
 	<bean id="bkxxxApplicationDataSourceRule" class="com.alipay.zdal.rule.config.beans.AppRule" init-method="init">
 		<property name="masterRule" ref="bkxxxApplicationDataSourceElasticRule" />
 	</bean>
 ```
-
-数据源规则列表,以table为当单位,真实场景需要将所有table加入tableRules中key为表名
 ```xml
 <bean id="bkxxxApplicationDataSourceElasticRule" class="com.alipay.zdal.rule.config.beans.ShardRule">
 		<property name="dbtype" value="MYSQL" />
@@ -129,15 +130,6 @@ ZDAL架构图一览
 		</property>
 </bean>
 ```
-ZDAL支持以下四种分库分表结构
-![img](/img/in-post/DepotsTableStructure.png)
-本文中使用throughAIIDB结构分表
-
-* 结合一个简单的例子看一下分库分表的具体配置
-* 假设bkxxx_transfer_detail表中存储支付宝转账明细记录,字段aliPay_id存储支付宝id
-* 现设计以aliPay_id为分表索引
-* 分表规则为根据aliPay_id最后两位(00-99)将原表拆分成100张表
-
 自定义静态方法来解析分表索引
 ```java
 package com.mybank.bkxxx.common.dal.common;
