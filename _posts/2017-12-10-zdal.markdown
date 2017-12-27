@@ -10,7 +10,7 @@ tags:
     - 蚂蚁中间件
 ---
 
-## ZDAL概念
+## 概念
 
 JDBC(Java DataBase Connectivity)是一组由Java编写的类和接口集
 * 封装了与多种数据库的连接实现,提供标准化的接口
@@ -18,11 +18,11 @@ JDBC(Java DataBase Connectivity)是一组由Java编写的类和接口集
 
 ZDAL是一个基于JDBC的`分布式`数据存储框架,结合一个问题概要的介绍一下ZDAL的功能
 
-`ZDAL和ORM框架(iBatis、Hibernate等)的区别?`
-* ZDAL在JDBC的数据库连接基础之上`采用分布式架构`提供数据拆分、数据源弹性伸缩、流量分发等功能
+> ZDAL和ORM框架(iBatis、Hibernate等)的区别?
+> ZDAL在JDBC的数据库连接基础之上`采用分布式架构`提供数据拆分、数据源弹性伸缩、流量分发等功能
 来解决传统单库单表存储的`容量性能瓶颈`以及在海量吞吐场景下提供`更安全稳定的数据层服务`
-* ORM框架主要使用元数据(XML中的声明)建立数据库记录与Java对象之间的映射关系,将对数据库记录的操作转化为对内存对象的操作
-* 个人感觉ZDAL主要解决性能安全问题,ORM框架主要为生成SQL以及数据库记录以及内存对象转换提供便利,两者互不依赖可单独使用
+> ORM框架主要使用元数据(XML中的声明)建立数据库记录与Java对象之间的映射关系,将对数据库记录的操作转化为对内存对象的操作
+> 个人感觉ZDAL主要解决性能安全问题,ORM框架主要为生成SQL以及数据库记录以及内存对象转换提供便利,两者互不依赖可单独使用
 
 本人在项目中使用的是 Sofa4 + ZDAL4 + iBatis 架构
 本文主要介绍一下ZDAL的数据拆分功能及涉及到的相关概念
@@ -69,7 +69,7 @@ ZDAL架构图一览
 	</bean>
 ```
 
-`应用数据源`中除了一些基础属性配置依赖了`物理数据源`以及`弹性数据源`
+`应用数据源`中依赖`物理数据源`以及`弹性数据源`
 本应用中只做了分表策略,没有进行分库所以物理数据源只有一项,
 分库场景下可以根据情况声明多个,路由规则后面会介绍
 ```xml
@@ -121,19 +121,21 @@ ZDAL架构图一览
 		<property name="dbtype" value="MYSQL" />
 		<property name="tableRules">
 			<map>
-				<entry key="bkxxx_table" value-ref="bkxxx_table_rule" />
+				<entry key="bkxxx_transfer_detail" value-ref="bkxxx_transfer_detail_rule" />
 			</map>
 		</property>
 </bean>
 ```
-
-本文以一个简单的例子介绍一下分库分表规则,
-bkxxx_transfer_detail表存储支付宝转账记录,表中aliPay_id存储支付宝id
-以aliPay_id作为分表位,分表规则:根据aliPay_id后两位进行sql路由
-
 ZDAL支持以下四种分库分表结构
 ![img](/img/in-post/DepotsTableStructure.png)
+本文中使用throughAIIDB结构分表
 
+> 结合一个简单的例子看一下分库分表的具体配置
+> 假设bkxxx_transfer_detail表中存储支付宝转账明细记录,字段aliPay_id存储支付宝id
+> 现设计以aliPay_id为分表索引
+> 分表规则为根据aliPay_id最后两位(00-99)将原表拆分成100张表
+
+自定义静态方法来解析分表索引
 ```java
 package com.mybank.bkxxx.common.dal.common;
 
@@ -144,25 +146,24 @@ public class ZDALRule {
 }
 ```
 
-* tbSuffix : 表后缀
-* dbindexes : 库列表
-* tbRuleArray : 分表规则
-* dbRuleList : 分库规则
-
 ```xml
-<bean id="bkxxx_table_rule" class="com.alipay.zdal.rule.config.beans.TableRule" init-method="init">
-		<property name="logicTableName" value="bkxxx_table" />
+<bean id="bkxxx_transfer_detail_rule" class="com.alipay.zdal.rule.config.beans.TableRule" init-method="init">
+		<property name="logicTableName" value="bkxxx_transfer_detail" />
+		<!-- 表后缀 -->
 		<property name="tbSuffix">
 			<value><![CDATA[groovyThroughAllDBTableList:def list = [];(0..99).each{ i ->list.add("0"+"${i}".padLeft(3,"0") );}; return list;]]></value>
 		</property>
+		<!-- 库列表 -->
 		<property name="dbIndexes">
 			<value><![CDATA[bkxxx_ds]]></value>
 		</property>
+		<!-- 分表规则 -->
 		<property name="tbRuleArray">
 			<list>
 				<value><![CDATA[return com.mybank.bkxxx.common.dal.common.ZDALRule.parseTableIndexByAliPayId(#aliPay_id#).padLeft(4,"0");]]></value>
 			</list>
 		</property>
+		<!-- 分库规则 -->
 		<property name="dbRuleList">
 			<list>
 				<value><![CDATA[ if(null != #id#) return 0;]]></value>
@@ -171,4 +172,4 @@ public class ZDALRule {
 	</bean>
 ```
 
-ZDAL的分布式Sequence的其他特性后续有心得再补充 ╮(￣▽￣"")╭
+ZDAL的分布式Sequence等其他特性后续有心得再补充 ╮(￣▽￣"")╭
