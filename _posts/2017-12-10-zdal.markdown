@@ -115,6 +115,8 @@ ZDAL支持以下四种分库分表结构
 * 假设bkxxx_transfer_detail表中存储支付宝转账明细记录,字段aliPay_id存储支付宝id
 * 现设计以aliPay_id为分表索引
 * 分表规则为根据aliPay_id最后两位(00-99)将原表拆分成100张表
+
+
 ```xml
 	<bean id="bkxxxApplicationDataSourceRule" class="com.alipay.zdal.rule.config.beans.AppRule" init-method="init">
 		<property name="masterRule" ref="bkxxxApplicationDataSourceElasticRule" />
@@ -130,7 +132,9 @@ ZDAL支持以下四种分库分表结构
 		</property>
 </bean>
 ```
+
 自定义静态方法来解析分表索引
+
 ```java
 package com.mybank.bkxxx.common.dal.common;
 
