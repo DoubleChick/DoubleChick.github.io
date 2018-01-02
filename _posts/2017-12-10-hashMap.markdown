@@ -21,6 +21,67 @@ tags:
 * 这个算法称为散列函数
 
 
+HashMap的构造函数主要是对一些元素大小进行了赋值,每个HashMap实例被创建出来时HashMap就自带了存储空间
+下面结合JDK1.6的源码进行介绍,JDK1.8的实现略有不同但原理相似
+
+首先看一下put方法,
+```java
+public V put(K var1, V var2) {
+    if(var1 == null) {
+        return this.putForNullKey(var2);
+    } else {
+        int var3 = hash(var1.hashCode());
+        int var4 = indexFor(var3, this.table.length);
+
+        for(HashMap.Entry var5 = this.table[var4]; var5 != null; var5 = var5.next) {
+            if(var5.hash == var3) {
+                Object var6 = var5.key;
+                if(var5.key == var1 || var1.equals(var6)) {
+                    Object var7 = var5.value;
+                    var5.value = var2;
+                    var5.recordAccess(this);
+                    return var7;
+                }
+            }
+        }
+
+        ++this.modCount;
+        this.addEntry(var3, var1, var2, var4);
+        return null;
+    }
+}
+```
+
+
+```java
+static int hash(int var0) {
+    var0 ^= var0 >>> 20 ^ var0 >>> 12;
+    return var0 ^ var0 >>> 7 ^ var0 >>> 4;
+}
+```
+
+```java
+public V get(Object var1) {
+    if(var1 == null) {
+        return this.getForNullKey();
+    } else {
+        int var2 = hash(var1.hashCode());
+
+        for(HashMap.Entry var3 = this.table[indexFor(var2, this.table.length)]; var3 != null; var3 = var3.next) {
+            if(var3.hash == var2) {
+                Object var4 = var3.key;
+                if(var3.key == var1 || var1.equals(var4)) {
+                    return var3.value;
+                }
+            }
+        }
+
+        return null;
+    }
+}
+```
+
+
 
 
 

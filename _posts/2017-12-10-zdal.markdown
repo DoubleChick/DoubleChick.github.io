@@ -124,12 +124,12 @@ ZDAL支持以下四种分库分表结构
 ```
 ```xml
 <bean id="bkxxxApplicationDataSourceElasticRule" class="com.alipay.zdal.rule.config.beans.ShardRule">
-		<property name="dbtype" value="MYSQL" />
-		<property name="tableRules">
-			<map>
-				<entry key="bkxxx_transfer_detail" value-ref="bkxxx_transfer_detail_rule" />
-			</map>
-		</property>
+	<property name="dbtype" value="MYSQL" />
+	<property name="tableRules">
+		<map>
+			<entry key="bkxxx_transfer_detail" value-ref="bkxxx_transfer_detail_rule" />
+		</map>
+	</property>
 </bean>
 ```
 
