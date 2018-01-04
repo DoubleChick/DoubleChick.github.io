@@ -1,11 +1,11 @@
 ---
 layout:     post
 title:      "HashMap"
-subtitle:   "散列函数|存储结构"
+subtitle:   "散列函数|存储结构|线程安全"
 date:       2017-12-10 13:30:00
 author:     "ZJF"
 header-img: "img/post-bg-unix-linux.jpg"
-catalog: false
+catalog: true
 tags:
     - 数据结构
 ---
@@ -75,11 +75,6 @@ public HashMap() {
 2.key不为null的情况,先取key的hashCode再进行散列得到该数据的存储位置var4
 
 3.遍历以table[var4]为头节点的链表,如果找到key相同的元素则覆盖value,否则在链尾增加该数据
-
-4.`值得关注的是indexFor函数`,这里它将散列值和存储Entry的数组长度进行了‘与’运算,也就是一个求低位掩码的过程,
-这样的目的是因为数组的默认初始长度是16,key的散列值如果不进行“缩减”很容易超出16,所以通过这种方式来将数据的存储位置限定在数组长度之内.
-但以数组大小为16的初始状态为例,只取散列值的低四位作为存储位置很容易产生碰撞,
-HashMap自带的hash函数中在通过移位异或相结合的方式将低位数据增加了高位的数据特征来尽可能的减少这种情况.
 ```java
 public V put(K var1, V var2) {
     if(var1 == null) {
@@ -105,6 +100,14 @@ public V put(K var1, V var2) {
         return null;
     }
 }
+```
+
+4.`首先关注一下indexFor函数`,这里它将散列值和存储Entry的数组长度进行了‘与’运算,也就是一个求低位掩码的过程,
+这样的目的是因为数组的默认初始长度是16,key的散列值如果不进行“缩减”很容易超出16,所以通过这种方式来将数据的存储位置限定在数组长度之内.
+但以数组大小为16的初始状态为例,只取散列值的低四位作为存储位置很容易产生碰撞,
+HashMap自带的hash函数中在通过移位异或相结合的方式将低位数据增加了高位的数据特征来尽可能的减少这种情况.
+知乎上有关于hash方法原理的话题,回答比较详细而且通俗易懂,有兴趣可以深入了解[hash方法原理](https://www.zhihu.com/question/20733617)
+```java
 static int indexFor(int var0, int var1) {
         return var0 & var1 - 1;
     }
@@ -115,7 +118,40 @@ static int hash(int var0) {
 }
 ```
 
+5.存储Entry的数组长度默认为16,如果不改变长度而一味的向其中增加数据的话,以每个数组元素为头节点的链表会变得非常长,而链表的查询效率是比较低的,
+也不符合使用数组结合hash的方式存储数据的初衷,所以在链尾添加数据的时候会`根据当前已存数据的数量进行扩容`,
+如果HashMap新增数据后数据数量超过构造对象时设置的阈值threshold,
+会调用resize方法进行扩容.
+* 如果当前数组容量已经达到容量上限1073741824,不再继续扩容
+* 扩容采用原容量*2的策略,扩容后的阈值也会变为原来的二倍
+* 阈值=容量*负载系数
+
+```java
+void addEntry(int var1, K var2, V var3, int var4) {
+    HashMap.Entry var5 = this.table[var4];
+    this.table[var4] = new HashMap.Entry(var1, var2, var3, var5);
+    if(this.size++ >= this.threshold) {
+        this.resize(2 * this.table.length);
+    }
+
+}
+void resize(int var1) {
+        HashMap.Entry[] var2 = this.table;
+        int var3 = var2.length;
+        if(var3 == 1073741824) {
+            this.threshold = 2147483647;
+        } else {
+            HashMap.Entry[] var4 = new HashMap.Entry[var1];
+            this.transfer(var4);
+            this.table = var4;
+            this.threshold = (int)((float)var1 * this.loadFactor);
+        }
+    }
+```
+
 取数据的get方法与put方法策略相似
+* 先对key的hashCode散列,根据散列值判断数据的存储位置
+* 再对以该位置为头节点的链表进行遍历,找到我们需要的数据
 ```java
 public V get(Object var1) {
     if(var1 == null) {
@@ -136,7 +172,40 @@ public V get(Object var1) {
     }
 }
 ```
+## 线程安全
+最后简单说两句并发问题,首先HashMap是非线程安全的
 
+从并发的角度很好理解,一般一个操作需要N个步骤去完成,又没设计成同步的大概率都会有并发隐患
+
+其中一种并发隐患就是在扩容的时候,在将原数组的数据“拷贝”到扩容后的新数组时,链表会倒序.
+这是因为HashMap采用头插法的方式复制链表,这样设计的原因是可以减少尾插法产生的遍历开销(数据插到链表尾部需要从头节点开始遍历).
+但在多个线程的场景下可能会出现死循环的问题,这是HashMap比较典型的一种并发问题,深究的话非线程安全的数据结构还可能导致其他的错误(例如空指针等等),此处就不一一分析了,
+因为Sun并不认为这算是什么问题,HashMap被设计出来的时候就不是应用在并发场景下的.如果有并发需求应该考虑其他的数据结构.
+```java
+void transfer(HashMap.Entry[] var1) {
+        HashMap.Entry[] var2 = this.table;
+        int var3 = var1.length;
+
+        for(int var4 = 0; var4 < var2.length; ++var4) {
+            HashMap.Entry var5 = var2[var4];
+            if(var5 != null) {
+                var2[var4] = null;
+
+                HashMap.Entry var6;
+                do {
+                    var6 = var5.next;
+                    int var7 = indexFor(var5.hash, var3);
+                    var5.next = var1[var7];
+                    var1[var7] = var5;
+                    var5 = var6;
+                } while(var6 != null);
+            }
+        }
+
+    }
+```
+
+本文应该涵盖了大部分HashMap的问题了,后续有其他心得再补充 ╮(￣▽￣"")╭
 
 
 
