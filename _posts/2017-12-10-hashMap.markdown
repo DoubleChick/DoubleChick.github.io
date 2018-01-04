@@ -12,7 +12,7 @@ tags:
 
 ## 基础概念
 HashMap在Java开发中非常常用,在面试中也非常容易被问到,首先从命名上大致了解一下HashMap是什么?
-* Map是一种存储`键值对`(Key-Value)的数据容器,它底层采用`数组`和`链表`两种数据解相结合的方式存储数据
+* Map是一种存储`键值对`(Key-Value)的数据容器,它底层采用`数组`和`链表`两种数据结构相结合的方式存储数据
 * Hash译为散列(散列函数),HashMap使用散列函数(不同的JDK版本有不同实现)确定数据的存储位置
 
 散列(Hash)是什么?
@@ -27,15 +27,34 @@ HashMap在Java开发中非常常用,在面试中也非常容易被问到,首先�
 
 但是从使用性的角度出发,上面这种想法只能实现存,取的话就很不方便,需要遍历整个容器比较key值才能取出你需要的数据
 
-存Key-Value非常简单,`HashMap的设计主要是解决了取的效率`,它通过使用散列函数来确定每个Key-Value的存储位置,
+存Key-Value非常简单,`个人认为HashMap的设计主要是解决了取的效率`,它通过使用散列函数来确定每个Key-Value的存储位置,
 这样当我们想取数据的时候只需要对key进行相同的散列计算就可以得知数据的存储位置了,而不需要遍历整个容器
 
-但是散列存在碰撞的可能性~
-
-
-
+散列存在碰撞,即存在不同的输入散列后有相同的输出,碰撞几率会受散列函数的设计和输出的长度影响,
+HashMap在存储Key-Value时如果发现多个key的散列结果相同,会以最早存进去的元素为头节点,用链表展开的方式存储key散列结果相同的数据,
+如下图所示~
 ![img](/img/in-post/HashMap.png)
 
+结合源码看一下HashMap的具体实现,源码版本为JDK1.6,不同的JDK版本HashMap实现略微不同,但思路大体相同,
+HashMap使用静态内部类Entry<K, V>来存储Key-Value数据,熟悉LinkedList的同学可以很容易从成员变量next和构造个函数看出
+Entry是一个链式结构,用来解决不同key值散列结果相同的情况
+```java
+static class Entry<K, V> implements java.util.Map.Entry<K, V> {
+    final K key;
+    V value;
+    HashMap.Entry<K, V> next;
+    final int hash;
+
+    Entry(int var1, K var2, V var3, HashMap.Entry<K, V> var4) {
+        this.value = var3;
+        this.next = var4;
+        this.key = var2;
+        this.hash = var1;
+    }
+
+    // 其余方法省略
+}
+```
 
 HashMap的构造函数主要是对一些元素大小进行了赋值,每个HashMap实例被创建出来时HashMap就自带了存储空间
 下面结合JDK1.6的源码进行介绍,JDK1.8的实现略有不同但原理相似
