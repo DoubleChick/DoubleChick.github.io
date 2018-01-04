@@ -56,10 +56,22 @@ static class Entry<K, V> implements java.util.Map.Entry<K, V> {
 }
 ```
 
-HashMap的构造函数主要是对一些元素大小进行了赋值,每个HashMap实例被创建出来时HashMap就自带了存储空间
-下面结合JDK1.6的源码进行介绍,JDK1.8的实现略有不同但原理相似
-
-首先看一下put方法,
+HashMap的默认构造函数如下,其中会默认为存储的Key-Value的Entry开辟大小16的数组空间
+并对loadFactor、threshold赋默认值(与扩容相关),可指定loadFactor、threshold的构造函数在此省略
+```java
+public HashMap() {
+    this.entrySet = null;
+    this.loadFactor = 0.75F;
+    this.threshold = 12;
+    this.table = new HashMap.Entry[16];
+    this.init();
+}
+ ```
+    
+当需要往HashMap中存储Key-Value数据时会调用put方法
+- key为null的情况,调用putForNullKey方法,HashMap默认将key为null的数据存在数组的第一个位置,但第一个位置的数据不一定key都是null
+- key不为null的情况,先取key的hashCode再进行散列得到该数据的存储位置var4
+- 遍历以table[var4]为头节点的链表,如果找到key相同的元素则覆盖value,否则在链尾增加该数据
 ```java
 public V put(K var1, V var2) {
     if(var1 == null) {
@@ -85,10 +97,7 @@ public V put(K var1, V var2) {
         return null;
     }
 }
-```
-
-
-```java
+// 散列函数为
 static int hash(int var0) {
     var0 ^= var0 >>> 20 ^ var0 >>> 12;
     return var0 ^ var0 >>> 7 ^ var0 >>> 4;
