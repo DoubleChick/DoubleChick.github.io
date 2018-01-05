@@ -69,7 +69,7 @@ public HashMap() {
 }
  ```
     
-# 当需要往HashMap中存储Key-Value数据时会调用put方法
+### 当需要往HashMap中存储Key-Value数据时会调用put方法
 
 1.key为null的情况,调用putForNullKey方法,HashMap默认将key为null的数据存在数组的第一个位置,但第一个位置的数据不一定key都是null
 
@@ -152,7 +152,7 @@ void resize(int var1) {
     }
 ```
 
-# 取数据的get方法与put方法策略相似
+### 取数据的get方法与put方法策略相似
 * 先对key的hashCode散列,根据散列值判断数据的存储位置
 * 再对以该位置为头节点的链表进行遍历,找到我们需要的数据
 ```java
@@ -176,6 +176,7 @@ public V get(Object var1) {
 }
 ```
 ## 线程安全
+
 最后简单说两句并发问题,首先HashMap是非线程安全的
 
 从并发的角度很好理解,一般一个操作需要N个步骤去完成,又没设计成同步的大概率都会有并发隐患
