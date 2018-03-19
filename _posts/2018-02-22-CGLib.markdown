@@ -1,0 +1,45 @@
+---
+layout:     post
+title:      "温习一波动态代理"
+subtitle:   ""
+date:       2018-03-19 13:30:00
+author:     "ZJF"
+header-img: "img/post-bg-unix-linux.jpg"
+catalog: false
+tags:
+    - Java核心技术
+---
+##什么是代理?
+	Java的技术概念中有“动态代理”、“静态代理”.那么什么是代理?先看一段静态代理的代码
+```java
+//接口
+interface Eat{
+	void eat(String people, String food);
+}
+//其中一种实现
+class EatImpl implements Eat{
+    @Override
+    public void eat(String people, String food) {
+        System.out.println(people + "eat" + food);
+    }
+}
+//静态代理类
+class StaticProxyEat implements Eat{
+    
+    private Eat eat = new EatImpl();
+
+    @Override
+    public void eat(String people, String food) {
+        //额外代码
+        eat.eat(people, food);
+        //额外代码
+    }
+}
+```
+
+
+
+
+
+
+
