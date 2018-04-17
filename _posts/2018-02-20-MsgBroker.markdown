@@ -32,7 +32,7 @@ tags:
 <sofa:consumer id="subscriber" group="S_appname_service">
 	<sofa:listener ref="uniformEventMessageListener" />
 	<sofa:channels>
-		<sofa:channel value="topicname">
+		<sofa:channel value="topicName">
 			<!-- 消息1 -->
 			<sofa:event eventCode="eventCode1" waterMark="-1" persistence="false" />
 			<!-- 消息2 -->
@@ -42,6 +42,9 @@ tags:
 	<sofa:binding.msg_broker />
 </sofa:consumer>
 ```
+MsgBroker中的消息类型由Topic(代码中的topicName)和EventCode共同标识,Topic代表一个消息大类(如TP_F_SC定时任务),EventCode标识消息大类下的一个消息子类
+一般消息大类Topic的新增变更较少,新增消息类型更多的是新增消息子类EventCode.
+
 
 ## 持久订阅&非持久订阅
 
