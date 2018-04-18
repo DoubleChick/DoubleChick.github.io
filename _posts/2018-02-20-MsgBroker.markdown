@@ -45,6 +45,9 @@ tags:
 MsgBroker中的消息类型由Topic(代码中的topicName)和EventCode共同标识,Topic代表一个消息大类(如TP_F_SC定时任务),EventCode标识消息大类下的一个消息子类
 一般消息大类Topic的新增变更较少,新增消息类型更多的是新增消息子类EventCode.
 
+封装在Cloud Engine中的Tracer组件会将当前系统中发布以及订阅的消息记录输出到指定的日志文件中 log根目录/tracelog/msg-sub-digest.log
+日志内容包括消息的类型(Topic、EventCode),GroupId、发布(订阅处理)状态等等,可以用来方便的排查消息的发布订阅情况
+
 
 ## 持久订阅&非持久订阅
 
