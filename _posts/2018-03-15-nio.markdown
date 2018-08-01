@@ -1,0 +1,49 @@
+---
+layout:     post
+title:      "聊聊Java NIO"
+subtitle:   ""
+date:       2018-03-15 13:30:00
+author:     "ZJF"
+header-img: "img/post-bg-unix-linux.jpg"
+catalog: false
+tags:
+    - Java核心技术
+---
+
+## nio
+nio在Thinking In Java中的描述是新I/O,指在JDK1.4中通过引入新的类库来提高速度.但在Netty相关的书籍中nio被描述为非阻塞IO(non-block IO)
+
+## Channel & Buffer
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,38 @@
+---
+layout:     post
+title:      "理解BIO和NIO的区别"
+subtitle:   ""
+date:       2018-07-10 13:30:00
+author:     "ZJF"
+header-img: "img/post-bg-unix-linux.jpg"
+catalog: false
+tags:
+    - 网络通信
+---
+
+今天来梳理一下BIO和NIO的区别，搞懂之后再回头看其实并不难，主要是当时理解的时候不自觉陷入了一个误区
+
+因为之前写demo的时候用Java Socket写过简单的Server 和 Client来理解网络通信，那时候又没有接触NIO
+
+* 所以不自觉的就认为用Socket写的这种就是BIO了
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
