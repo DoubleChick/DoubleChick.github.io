@@ -1,0 +1,300 @@
+---
+layout:     post
+title:      "JDBC"
+subtitle:   ""
+date:       2017-01-23 13:30:00
+author:     "ZJF"
+header-img: "img/post-bg-unix-linux.jpg"
+catalog: false
+tags:
+    - Mysql
+---
+
+## 为啥我想记录下JDBC？
+最近想认真撸一下Mybatis的源码，之前一直觉得这个ORM框架没什么好深入研究的，因为刚接触工作就用的它，没怎么手撸过原生JDBC来操作数据，也没什么比较
+
+其次Mybatis其中涉及到一些和原生JDBC相联系的内容所以来复习一下。。
+
+## JDBC是如何与数据库建立连接的呢？具体是什么步骤？
+或者换一个思路，我们正常是怎么在Mysql上操作数据的
+1.需要知道DataBase的地址、端口、账号、密码、库名
+2.然后可以通过终端登录到数据库服务器上（公司生产环境一般会先上跳板机）执行一条类似下面的命令
+mysql -u用户 -p密码 -h地址 -P端口 --default-character=编码
+3.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+## 基础概念
+HashMap在Java开发中非常常用,在面试中也经常被问到,首先从命名上大致了解一下HashMap是什么?
+* Map是一种存储`键值对`(Key-Value)的数据容器,它底层采用`数组`和`链表`两种数据结构相结合的方式存储数据
+* Hash译为散列(散列函数),HashMap使用散列函数(不同的JDK版本有不同实现)确定数据的存储位置
+
+散列(Hash)是什么?
+* 通俗的讲就是`任意长度的输入`经过特定的算法转换为`固定长度的输出`(一般场景下输入长度大于输出长度)
+* 这个转换的过程称为散列,这个算法称为散列函数
+* 散列是一个`获取信息摘要`的过程
+
+## 存储结构
+先不深究HashMap的存储原理,想一个问题,我们如何在Java中存储Key-Value?
+* 定义一个类,声明两个成员变量key和value,这就实现了存储Key-Value
+* 随便选取一种数据结构(例如数组)来存储该类的对象就实现了存储Key-Value的数据容器
+
+但是从使用性的角度出发,上面这种想法只能实现存,取的话就很不方便,需要遍历整个容器比较key值才能取出你需要的数据
+
+存Key-Value非常简单,`个人认为HashMap的设计主要是解决了取的效率`,它通过使用散列函数来确定每个Key-Value的存储位置,
+这样当我们想取数据的时候只需要对key进行相同的散列计算就可以得知数据的存储位置了,而不需要遍历整个容器
+
+散列存在碰撞,即不同的输入有相同的散列值,碰撞几率会受散列函数的算法和输出的长度影响,
+HashMap在存储Key-Value时如果发现多个key的散列结果相同,会以最早存进去的元素为头节点,用链表展开的方式存储key散列值相同的数据,
+如下图所示~
+![img](/img/in-post/HashMap.png)
+
+结合源码看一下HashMap的具体实现,源码版本为JDK1.6,不同的JDK版本HashMap实现略微不同,但思路一致
+
+HashMap使用静态内部类Entry<K, V>来存储Key-Value数据,熟悉LinkedList的同学可以很容易从成员变量next和构造个函数看出
+Entry是一个链式结构,用来解决不同key值散列结果相同的情况
+```java
+static class Entry<K, V> implements java.util.Map.Entry<K, V> {
+    final K key;
+    V value;
+    HashMap.Entry<K, V> next;
+    final int hash;
+
+    Entry(int var1, K var2, V var3, HashMap.Entry<K, V> var4) {
+        this.value = var3;
+        this.next = var4;
+        this.key = var2;
+        this.hash = var1;
+    }
+
+    // 其余方法省略
+}
+```
+
+HashMap的默认构造函数如下,其中会默认为存储的Key-Value的Entry开辟大小16的数组空间.
+并对loadFactor、threshold赋默认值(与扩容相关),可指定loadFactor、threshold的构造函数在此省略
+```java
+public HashMap() {
+    this.entrySet = null;
+    this.loadFactor = 0.75F;
+    this.threshold = 12;
+    this.table = new HashMap.Entry[16];
+    this.init();
+}
+ ```
+    
+### 当需要往HashMap中存储Key-Value数据时会调用put方法
+
+1.key为null的情况,调用putForNullKey方法,HashMap默认将key为null的数据存在数组的第一个位置,但第一个位置的数据不一定key都是null
+
+2.key不为null的情况,先取key的hashCode再进行散列得到该数据的存储位置var4
+
+3.遍历以table[var4]为头节点的链表,如果找到key相同的元素则覆盖value,否则在链尾增加该数据
+```java
+public V put(K var1, V var2) {
+    if(var1 == null) {
+        return this.putForNullKey(var2);
+    } else {
+        int var3 = hash(var1.hashCode());
+        int var4 = indexFor(var3, this.table.length);
+
+        for(HashMap.Entry var5 = this.table[var4]; var5 != null; var5 = var5.next) {
+            if(var5.hash == var3) {
+                Object var6 = var5.key;
+                if(var5.key == var1 || var1.equals(var6)) {
+                    Object var7 = var5.value;
+                    var5.value = var2;
+                    var5.recordAccess(this);
+                    return var7;
+                }
+            }
+        }
+
+        ++this.modCount;
+        this.addEntry(var3, var1, var2, var4);
+        return null;
+    }
+}
+```
+
+4.首先关注一下indexFor函数,这里它将散列值和存储Entry的数组长度进行了‘与’运算,也就是一个求低位掩码的过程,
+这样的目的是因为数组的默认初始长度是16,key的散列值如果不进行“缩减”很容易超出16,所以`通过这种方式来将数据的存储位置限定在数组长度之内`
+
+但以数组初始大小为16为例,只取散列值的低四位作为存储位置很容易产生碰撞,
+HashMap自带的hash函数中在通过移位异或相结合的方式将低位数据增加了高位的数据特征来尽可能的减少这种情况
+
+知乎上有关于hash方法原理的话题,回答比较详细而且通俗易懂,有兴趣可以深入了解[hash方法原理](https://www.zhihu.com/question/20733617)
+```java
+static int indexFor(int var0, int var1) {
+        return var0 & var1 - 1;
+    }
+// 这里的散列过程做了四次右移异或混合操作,高版本的JDK已经做了简化,但原理相同
+static int hash(int var0) {
+    var0 ^= var0 >>> 20 ^ var0 >>> 12;
+    return var0 ^ var0 >>> 7 ^ var0 >>> 4;
+}
+```
+
+5.存储Entry的数组长度默认为16,如果不改变长度而一味的向其中增加数据的话,以每个数组元素为头节点的链表会变得非常长,而链表的查询效率是比较低的,
+也不符合使用数组结合hash的方式存储数据的初衷,所以在链尾添加数据的时候会`根据当前已存数据的数量进行扩容`,
+如果HashMap新增数据后数据数量超过构造对象时设置的阈值threshold,
+会调用resize方法进行扩容.
+* 如果当前数组容量已经达到容量上限1073741824,不再继续扩容
+* 扩容采用原容量*2的策略,扩容后的阈值也会变为原来的二倍
+* 阈值=容量*负载系数
+
+```java
+void addEntry(int var1, K var2, V var3, int var4) {
+    HashMap.Entry var5 = this.table[var4];
+    this.table[var4] = new HashMap.Entry(var1, var2, var3, var5);
+    if(this.size++ >= this.threshold) {
+        this.resize(2 * this.table.length);
+    }
+
+}
+void resize(int var1) {
+        HashMap.Entry[] var2 = this.table;
+        int var3 = var2.length;
+        if(var3 == 1073741824) {
+            this.threshold = 2147483647;
+        } else {
+            HashMap.Entry[] var4 = new HashMap.Entry[var1];
+            this.transfer(var4);
+            this.table = var4;
+            this.threshold = (int)((float)var1 * this.loadFactor);
+        }
+    }
+```
+
+### 取数据的get方法与put方法策略相似
+* 先对key的hashCode散列,根据散列值判断数据的存储位置
+* 再对以该位置为头节点的链表进行遍历,找到我们需要的数据
+```java
+public V get(Object var1) {
+    if(var1 == null) {
+        return this.getForNullKey();
+    } else {
+        int var2 = hash(var1.hashCode());
+
+        for(HashMap.Entry var3 = this.table[indexFor(var2, this.table.length)]; var3 != null; var3 = var3.next) {
+            if(var3.hash == var2) {
+                Object var4 = var3.key;
+                if(var3.key == var1 || var1.equals(var4)) {
+                    return var3.value;
+                }
+            }
+        }
+
+        return null;
+    }
+}
+```
+## 线程安全
+
+最后简单说两句并发问题,首先HashMap是非线程安全的
+
+从并发的角度很好理解,一般一个操作需要N个步骤去完成,又没设计成同步的大概率都会有并发隐患
+
+其中一种并发隐患就是在扩容的时候,在将原数组的数据“拷贝”到扩容后的新数组时,链表会倒序.
+这是因为HashMap采用头插法的方式复制链表,这样设计的原因是可以减少尾插法产生的遍历开销(数据插到链表尾部需要从头节点开始遍历).
+但在多个线程的场景下可能会出现死循环的问题,这是HashMap比较典型的一种并发问题
+
+深究的话非线程安全的数据结构还可能导致其他的错误(例如空指针等等),此处就不一一分析了,
+因为Sun并不认为这算是什么问题,HashMap被设计出来的时候就不是应用在并发场景下的.如果有并发需求应该考虑其他的数据结构.
+```java
+void transfer(HashMap.Entry[] var1) {
+        HashMap.Entry[] var2 = this.table;
+        int var3 = var1.length;
+
+        for(int var4 = 0; var4 < var2.length; ++var4) {
+            HashMap.Entry var5 = var2[var4];
+            if(var5 != null) {
+                var2[var4] = null;
+
+                HashMap.Entry var6;
+                do {
+                    var6 = var5.next;
+                    int var7 = indexFor(var5.hash, var3);
+                    var5.next = var1[var7];
+                    var1[var7] = var5;
+                    var5 = var6;
+                } while(var6 != null);
+            }
+        }
+
+    }
+```
+
+后续有其他心得再补充 ╮(￣▽￣"")╭
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
